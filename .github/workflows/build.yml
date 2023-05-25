@@ -1,0 +1,21 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build-binary:
+    runs-on: ubuntu-latest
+    container: garyodernichts/dmcubuilder:latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Build binary
+      run: |
+        export WINEPREFIX=/root/.wine
+        make PREFIX="wine /gnu-68hc1x/app/bin/m6811-elf-" SUFFIX=".exe"
+
+    - uses: actions/upload-artifact@master
+      with:
+       name: OpenDMCUFirm
+       path: "dmcu.d.hex"
