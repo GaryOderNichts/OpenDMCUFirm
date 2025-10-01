@@ -73,7 +73,7 @@ FVIState* FVI_GetState(void)
     gFVIState.unk0x1A = gFVIRegs.reg0x1092 & 0xFF;
     gFVIState.unk0x18 = 0;
     // I think this is right?
-    gFVIState.videoMode = ((uint16_t)gFVIState.unk0x00 * 0x3) + ((gFVIRegs.reg0x1080 >> 16) & 0x3ff) * 0x2 + ((uint16_t)gFVIState.unk0x10) + gFVIState.unk0x0A;
+    gFVIState.videoMode = ((uint16_t)gFVIState.unk0x00 * 0x3) + (((gFVIRegs.reg0x1080 >> 16) & 0x3ff) * 0x2) + ((uint16_t)gFVIState.unk0x10) + gFVIState.unk0x0A;
     gFVIState.unk0x06 = (gFVIRegs.reg0x1080 >> 16) & 0x3FF;
     gFVIState.unk0x0E = gFVIRegs.reg0x1084 & 0x3FF;
     gFVIState.unk0x16 = (gFVIRegs.reg0x1084 >> 16) & 0x3FF;
@@ -89,25 +89,25 @@ static FVIVideoMode convertVideoMode(uint32_t rawMode)
         mode = FVI_VIDEO_MODE_480P;
         break;
     case 0x4E2:
-        mode = FVI_VIDEO_MODE_576I;
+        mode = FVI_VIDEO_MODE_576P;
         break;
     case 0x20D:
-        mode = FVI_VIDEO_MODE_UNK1;
+        mode = FVI_VIDEO_MODE_480I;
         break;
     case 0x271:
-        mode = FVI_VIDEO_MODE_UNK2;
+        mode = FVI_VIDEO_MODE_576I;
         break;
     case 0x270:
-        mode = FVI_VIDEO_MODE_UNK3;
+        mode = FVI_VIDEO_MODE_288P_312;
         break;
     case 0x272:
-        mode = FVI_VIDEO_MODE_UNK4;
+        mode = FVI_VIDEO_MODE_288P_313;
         break;
     case 0x20C:
-        mode = FVI_VIDEO_MODE_UNK5;
+        mode = FVI_VIDEO_MODE_240P_262;
         break;
     case 0x20E:
-        mode = FVI_VIDEO_MODE_UNK6;
+        mode = FVI_VIDEO_MODE_240P_263;
         break;
     default:
         break;
@@ -115,7 +115,7 @@ static FVIVideoMode convertVideoMode(uint32_t rawMode)
 
     if (mode == FVI_VIDEO_MODE_INVALID) {
         DEBUG_SetLowMarker(0x2);
-        DEBUG_SetHighMarker((rawMode >> 16) | 0x1000);
+        DEBUG_SetHighMarker(((uint16_t) rawMode) | 0x1000);
     } else {
         DEBUG_ClearMarker(0x2);
     }

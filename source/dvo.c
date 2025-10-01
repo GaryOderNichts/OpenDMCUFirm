@@ -24,12 +24,11 @@ void DVO_SetEnable(uint16_t enable)
 
 void DVO_SetVideoFormat(FVIVideoMode videoMode)
 {
-    // This switch probably decides between NTSC/PAL?
-    // See getNTSC_PAL / FUN_1bdc
+    // This switch decides between NTSC/PAL
     switch (videoMode) {
-    case FVI_VIDEO_MODE_UNK1:
-    case FVI_VIDEO_MODE_UNK5:
-    case FVI_VIDEO_MODE_UNK6:
+    case FVI_VIDEO_MODE_480I:
+    case FVI_VIDEO_MODE_240P_262:
+    case FVI_VIDEO_MODE_240P_263:
     case FVI_VIDEO_MODE_480P:
         IRQ_Lock();
         DC_PerformRead(DVOA_CONFIG);
@@ -39,10 +38,10 @@ void DVO_SetVideoFormat(FVIVideoMode videoMode)
         IRQ_Unlock();
         break;
     
-    case FVI_VIDEO_MODE_UNK2:
-    case FVI_VIDEO_MODE_UNK3:
-    case FVI_VIDEO_MODE_UNK4:
     case FVI_VIDEO_MODE_576I:
+    case FVI_VIDEO_MODE_288P_312:
+    case FVI_VIDEO_MODE_288P_313:
+    case FVI_VIDEO_MODE_576P:
         IRQ_Lock();
         DC_PerformRead(DVOA_CONFIG);
         DC_Write8(DVOA_CONFIG, 0, (DC_Get8(0) & 0xcf) | DVO_VIDEO_FORMAT(1));
@@ -61,20 +60,22 @@ void DVO_SetVideoFormat(FVIVideoMode videoMode)
 void DVO_SetRefreshRate(uint16_t param_1, FVIVideoMode videoMode)
 {
     uint16_t val = 0;
+
+    // This switch decides between NTSC/PAL
     switch (videoMode) {
-    case FVI_VIDEO_MODE_UNK1:
-    case FVI_VIDEO_MODE_UNK5:
-    case FVI_VIDEO_MODE_UNK6:
+    case FVI_VIDEO_MODE_480I:
+    case FVI_VIDEO_MODE_240P_262:
+    case FVI_VIDEO_MODE_240P_263:
     case FVI_VIDEO_MODE_480P:
         if (param_1 == TRUE) {
             val = 4 | 1; // DVO_REFRESH_RATE_EN | DVO_REFRESH_RATE_FLAGS(2)
         }
         break;
     
-    case FVI_VIDEO_MODE_UNK2:
-    case FVI_VIDEO_MODE_UNK3:
-    case FVI_VIDEO_MODE_UNK4:
     case FVI_VIDEO_MODE_576I:
+    case FVI_VIDEO_MODE_288P_312:
+    case FVI_VIDEO_MODE_288P_313:
+    case FVI_VIDEO_MODE_576P:
         if (param_1 == TRUE) {
             val = 2 | 1; // DVO_REFRESH_RATE_EN | DVO_REFRESH_RATE_FLAGS(1)
         }

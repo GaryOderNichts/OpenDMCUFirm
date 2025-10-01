@@ -9,6 +9,12 @@
 
 typedef struct DMCUState DMCUState;
 
+typedef enum {
+    DMCU_VIDEO_STANDARD_INVALID = 0,
+    DMCU_VIDEO_STANDARD_NTSC    = 1,
+    DMCU_VIDEO_STANDARD_PAL     = 2,
+} DMCUVideoStandard;
+
 struct DMCUState {
     uint16_t stateFlags;
     uint32_t reg0x1060;
@@ -17,8 +23,7 @@ struct DMCUState {
     FVIVideoMode requestedVideoMode;
     BOOL cbcrSwapEnabled;
     uint16_t unk0x0E;
-    // not sure what to call this
-    uint16_t palMode;
+    DMCUVideoStandard currentVideoStandard;
     int16_t deintNeedsUpdate;
     uint16_t unk0x14;
     BOOL pendingOverscanConfiguration;

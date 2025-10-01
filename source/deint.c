@@ -38,32 +38,32 @@ DEINTIfTimParams* DEINT_GetIfTimParams(FVIVideoMode mode)
 {
     DEINTIfTimParams* params;
     switch (mode) {
-    case 0x1:
-    case 0x5:
-    case 0x6:
+    case FVI_VIDEO_MODE_480I:
+    case FVI_VIDEO_MODE_240P_262:
+    case FVI_VIDEO_MODE_240P_263:
         g0x1630Params.topPorchOdd = 0x24;
         g0x1630Params.topPorchEven = 0x25;
         g0x1630Params.height = 240;
         g0x1630Params.preHBlank = 0x77;
         params = &g0x1630Params;
         break;
-    case 0x2:
-    case 0x3:
-    case 0x4:
+    case FVI_VIDEO_MODE_576I:
+    case FVI_VIDEO_MODE_288P_312:
+    case FVI_VIDEO_MODE_288P_313:
         g0x1630Params.topPorchOdd = 0x2B;
         g0x1630Params.topPorchEven = 0x2C;
         g0x1630Params.height = 288;
         g0x1630Params.preHBlank = 0x84;
         params = &g0x1630Params;
         break;
-    case 0x7:
+    case FVI_VIDEO_MODE_480P:
         g0x1630Params.topPorchOdd = 0x48;
         g0x1630Params.topPorchEven = 0x48;
         g0x1630Params.height = 480;
         g0x1630Params.preHBlank = 0x7A;
         params = &g0x1630Params;
         break;
-    case 0x8:
+    case FVI_VIDEO_MODE_576P:
         g0x1630Params.topPorchOdd = 0x58;
         g0x1630Params.topPorchEven = 0x58;
         g0x1630Params.height = 576;
@@ -221,7 +221,7 @@ uint16_t DEINT_139a(FVIVideoMode videoMode)
 
     DEINT_SetIfTimParams(params);
 
-    if (videoMode == FVI_VIDEO_MODE_480P || videoMode == FVI_VIDEO_MODE_576I) {
+    if (videoMode == FVI_VIDEO_MODE_480P || videoMode == FVI_VIDEO_MODE_576P) {
         DEBUG_Write0x6(0x8);
         DEINT_DisableKernel();
         DEINT_DisableMAD();
@@ -273,16 +273,16 @@ void FUN_0f99(void)
     DEBUG_Write0x6(0x80);
 }
 
-void FUN_0e3b(uint16_t videoMode, FVIState* state)
+void FUN_0e3b(FVIVideoMode videoMode, FVIState* state)
 {
     uint16_t local_6 = 0;
     uint32_t uVar1 = 0;
     uint16_t uVar2 = 0;
-    if (videoMode == 0x3 || videoMode == 0x5) {
+    if (videoMode == FVI_VIDEO_MODE_288P_312 || videoMode == FVI_VIDEO_MODE_240P_262) {
         local_6 = state->unk0x0A;
         uVar1 = state->unk0x10 + 1;
         uVar2 = state->unk0x0E - 1;
-    } else if (videoMode == 0x4 || videoMode == 0x6) {
+    } else if (videoMode == FVI_VIDEO_MODE_288P_313 || videoMode == FVI_VIDEO_MODE_240P_263) {
         local_6 = state->unk0x0A;
         uVar1 = state->unk0x10 - 1;
         uVar2 = state->unk0x0E + 1;
@@ -310,7 +310,7 @@ uint16_t DEINT_0dff(FVIVideoMode videoMode, FVIState* state)
         return 0;
     }
 
-    if (videoMode == FVI_VIDEO_MODE_UNK1 || videoMode == FVI_VIDEO_MODE_UNK2) {
+    if (videoMode == FVI_VIDEO_MODE_480I || videoMode == FVI_VIDEO_MODE_576I) {
         if (DAT_0120) {
             FUN_0f99();
         }

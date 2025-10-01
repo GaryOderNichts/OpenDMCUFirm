@@ -39,23 +39,23 @@ struct FVIState {
 };
 
 typedef enum {
-    FVI_VIDEO_MODE_INVALID = 0x0,
-    //! NTSC 240?
-    FVI_VIDEO_MODE_UNK1    = 0x1,
-    //! PAL 288?
-    FVI_VIDEO_MODE_UNK2    = 0x2,
-    //! PAL 288?
-    FVI_VIDEO_MODE_UNK3    = 0x3,
-    //! PAL 288?
-    FVI_VIDEO_MODE_UNK4    = 0x4,
-    //! NTSC 240?
-    FVI_VIDEO_MODE_UNK5    = 0x5,
-    //! NTSC 240?
-    FVI_VIDEO_MODE_UNK6    = 0x6,
-    //! NTSC 480p?
-    FVI_VIDEO_MODE_480P    = 0x7,
-    //! PAL 576i?
-    FVI_VIDEO_MODE_576I    = 0x8,
+    FVI_VIDEO_MODE_INVALID  = 0x0,
+    //! NTSC
+    FVI_VIDEO_MODE_480I     = 0x1,
+    //! PAL
+    FVI_VIDEO_MODE_576I     = 0x2,
+    //! PAL
+    FVI_VIDEO_MODE_288P_312 = 0x3,
+    //! PAL
+    FVI_VIDEO_MODE_288P_313 = 0x4,
+    //! NTSC
+    FVI_VIDEO_MODE_240P_262 = 0x5,
+    //! NTSC
+    FVI_VIDEO_MODE_240P_263 = 0x6,
+    //! NTSC
+    FVI_VIDEO_MODE_480P     = 0x7,
+    //! PAL
+    FVI_VIDEO_MODE_576P     = 0x8,
 } FVIVideoMode;
 
 BOOL FVI_Wait(void);

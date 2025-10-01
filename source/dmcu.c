@@ -23,15 +23,15 @@ static uint32_t lastIrqTime = 0;
 DMCUState gDmcuState = {
     .stateFlags = 0,
     .reg0x1060 = 0xFCC7FFF,
-    .isVisible = 0,
-    .currentVideoMode = 0,
-    .requestedVideoMode = 0,
-    .cbcrSwapEnabled = 0,
+    .isVisible = FALSE,
+    .currentVideoMode = FVI_VIDEO_MODE_INVALID,
+    .requestedVideoMode = FVI_VIDEO_MODE_INVALID,
+    .cbcrSwapEnabled = FALSE,
     .unk0x0E = 0,
-    .palMode = 0,
+    .currentVideoStandard = DMCU_VIDEO_STANDARD_INVALID,
     .deintNeedsUpdate = -1,
     .unk0x14 = 0xFFFF,
-    .pendingOverscanConfiguration = 0,
+    .pendingOverscanConfiguration = FALSE,
     .yStart = 0
 };
 FVIVideoMode gVideoMode;
@@ -273,14 +273,14 @@ void DMCU_Setup()
         DVO_StopVIClock(DISPLAY_TV);
 
         GRPH_SetD1Viewport(711, 474, 720, 480, gTVXStart, gTVYStart);
-        DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK1);
-        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_UNK1);
+        DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
+        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_480I);
 
         DVO_RunVIClock(DISPLAY_TV);
 
         udelay(0x286);
 
-        DEINT_Configure(0x1);
+        DEINT_Configure(FVI_VIDEO_MODE_480I);
     } else {
         DEBUG_Write0x6(0x10);
         gDmcuState.unk0x0E = 0x2;
@@ -290,21 +290,21 @@ void DMCU_Setup()
         if (CONF_IsPAL(DISPLAY_TV)) {
             FUN_17dc();
             CRTC_SetD2Config(&crtcConfigs[9]);
-            gDmcuState.currentVideoMode = FVI_VIDEO_MODE_UNK2;
-            gDmcuState.palMode = 0x2;
+            gDmcuState.currentVideoMode = FVI_VIDEO_MODE_576I;
+            gDmcuState.currentVideoStandard = DMCU_VIDEO_STANDARD_PAL;
             gDmcuState.yStart = 0x2;
             GRPH_SetD1Viewport(712, 569, 720, 576, 4, 2);
-            DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK2);
-            DVO_SetRefreshRate(2, FVI_VIDEO_MODE_UNK2);
-            DEINT_Configure(FVI_VIDEO_MODE_UNK2);
+            DVO_SetVideoFormat(FVI_VIDEO_MODE_576I);
+            DVO_SetRefreshRate(2, FVI_VIDEO_MODE_576I);
+            DEINT_Configure(FVI_VIDEO_MODE_576I);
         } else {
             gDmcuState.currentVideoMode = FVI_VIDEO_MODE_480P;
-            gDmcuState.palMode = 0x1;
+            gDmcuState.currentVideoStandard = DMCU_VIDEO_STANDARD_NTSC;
             gDmcuState.yStart = 0x1;
             GRPH_SetD1Viewport(712, 474, 720, 480, 4, 2);
-            DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK1);
-            DVO_SetRefreshRate(2, FVI_VIDEO_MODE_UNK1);
-            DEINT_Configure(FVI_VIDEO_MODE_UNK1);
+            DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
+            DVO_SetRefreshRate(2, FVI_VIDEO_MODE_480I);
+            DEINT_Configure(FVI_VIDEO_MODE_480I);
         }
 
         DC_Write32(D1MODE_MASTER_UPDATE_LOCK, 0);
@@ -399,7 +399,7 @@ void DMCU_EventHandler1(DMCUState* state)
             return;
         }
 
-        if (state->isVisible != 1) {
+        if (state->isVisible != TRUE) {
             return;
         }
 
@@ -497,22 +497,21 @@ BOOL NeedsUnblank(DMCUState* state)
     return FALSE;
 }
 
-// TODO what if this is interlaced vs progressive?
-static uint16_t getNTSC_PAL(FVIVideoMode videoMode)
+static DMCUVideoStandard getVideoStandard(FVIVideoMode videoMode)
 {
     switch (videoMode) {
-    case FVI_VIDEO_MODE_UNK1:
-    case FVI_VIDEO_MODE_UNK5:
-    case FVI_VIDEO_MODE_UNK6:
+    case FVI_VIDEO_MODE_480I:
+    case FVI_VIDEO_MODE_240P_262:
+    case FVI_VIDEO_MODE_240P_263:
     case FVI_VIDEO_MODE_480P:
-        return 1;
-    case FVI_VIDEO_MODE_UNK2:
-    case FVI_VIDEO_MODE_UNK3:
-    case FVI_VIDEO_MODE_UNK4:
+        return DMCU_VIDEO_STANDARD_NTSC;
     case FVI_VIDEO_MODE_576I:
-        return 2;
+    case FVI_VIDEO_MODE_288P_312:
+    case FVI_VIDEO_MODE_288P_313:
+    case FVI_VIDEO_MODE_576P:
+        return DMCU_VIDEO_STANDARD_PAL;
     default:
-        return 0;
+        return DMCU_VIDEO_STANDARD_INVALID;
     }
 }
 
@@ -701,17 +700,17 @@ static void FUN_17f2(void)
     DC_Write32(0x163A, (DC_Read32(0x163A) & 0xFFFFDFFF) | 0x5F00);
 }
 
-void configureVideoModeHD(DMCUState* state, FVIVideoMode videoMode)
+void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
 {
-    uint16_t ntsc_pal = getNTSC_PAL(videoMode);
-    if (ntsc_pal == 0) {
+    DMCUVideoStandard videoStandard = getVideoStandard(videoMode);
+    if (videoStandard == DMCU_VIDEO_STANDARD_INVALID) {
         DEBUG_SetLowMarker(0x8);
         DEBUG_SetHighMarker(state->currentVideoMode);
         return;
     }
 
     state->currentVideoMode = videoMode;
-    if (state->palMode == ntsc_pal) {
+    if (state->currentVideoStandard == videoStandard) {
         return;
     }
 
@@ -719,7 +718,7 @@ void configureVideoModeHD(DMCUState* state, FVIVideoMode videoMode)
     DVO_StopVIClockAll();
     CRTC_DisableAll();
 
-    if (ntsc_pal == 1) {
+    if (videoMode == DMCU_VIDEO_STANDARD_NTSC) {
         FUN_1732();
         FUN_17f2();
 
@@ -735,10 +734,10 @@ void configureVideoModeHD(DMCUState* state, FVIVideoMode videoMode)
         }
 
         CRTC_SetD2Config(&crtcConfigs[8]);
-        state->palMode = ntsc_pal;
-        DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK1);
-        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_UNK1);
-    } else if (ntsc_pal == 2) {
+        state->currentVideoStandard = DMCU_VIDEO_STANDARD_NTSC;
+        DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
+        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_480I);
+    } else if (videoMode == DMCU_VIDEO_STANDARD_PAL) {
         FUN_1669();
         FUN_17dc();
 
@@ -754,9 +753,9 @@ void configureVideoModeHD(DMCUState* state, FVIVideoMode videoMode)
         }
 
         CRTC_SetD2Config(&crtcConfigs[9]);
-        state->palMode = 0x2;
-        DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK2);
-        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_UNK2);
+        state->currentVideoStandard = DMCU_VIDEO_STANDARD_PAL;
+        DVO_SetVideoFormat(FVI_VIDEO_MODE_576I);
+        DVO_SetRefreshRate(1, FVI_VIDEO_MODE_576I);
     }
 
     CRTC_EnableAll();
@@ -767,17 +766,17 @@ void configureVideoModeHD(DMCUState* state, FVIVideoMode videoMode)
     udelay(0x286);
 }
 
-void configureVideoModeSD(DMCUState* state, FVIVideoMode videoMode)
+void configureVideoStandardSD(DMCUState* state, FVIVideoMode videoMode)
 {
-    uint16_t ntsc_pal = getNTSC_PAL(videoMode);
-    if (ntsc_pal == 0) {
+    DMCUVideoStandard videoStandard = getVideoStandard(videoMode);
+    if (videoStandard == DMCU_VIDEO_STANDARD_INVALID) {
         DEBUG_SetLowMarker(0x8);
         DEBUG_SetHighMarker(state->currentVideoMode);
         return;
     }
 
     state->currentVideoMode = videoMode;
-    if (state->palMode == ntsc_pal) {
+    if (state->currentVideoStandard == videoStandard) {
         return;
     }
 
@@ -785,24 +784,24 @@ void configureVideoModeSD(DMCUState* state, FVIVideoMode videoMode)
     DVO_StopVIClock(DISPLAY_DRC);
     CRTC_DisableAll();
 
-    if (ntsc_pal == 1) {
+    if (videoStandard == DMCU_VIDEO_STANDARD_NTSC) {
         FUN_17f2();
         GRPH_SetD1Viewport(0x2c8, 0x1da, 0x2d0, 0x1e0, 0x4, 0x2);
         GRPH_SetD2Viewport(0x2b0, 0x1ca, 0x2d0, 0x1e0, 0x10, 0xe);
         CRTC_SetD1Config(&crtcConfigs[6]);
         CRTC_SetD2Config(&crtcConfigs[8]);
-        state->palMode = 1;
-        DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK1);
-        DVO_SetRefreshRate(2, FVI_VIDEO_MODE_UNK1);
+        state->currentVideoStandard = DMCU_VIDEO_STANDARD_NTSC;
+        DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
+        DVO_SetRefreshRate(2, FVI_VIDEO_MODE_480I);
     } else {
         FUN_17dc();
         GRPH_SetD1Viewport(0x2c8, 0x239, 0x2d0, 0x240, 0x4, 0x2);
         GRPH_SetD2Viewport(0x2b0, 0x226, 0x2d0, 0x240, 0x10, 0xe);
         CRTC_SetD1Config(&crtcConfigs[7]);
         CRTC_SetD2Config(&crtcConfigs[9]);
-        state->palMode = 2;
-        DVO_SetVideoFormat(FVI_VIDEO_MODE_UNK2);
-        DVO_SetRefreshRate(2, FVI_VIDEO_MODE_UNK2);
+        state->currentVideoStandard = DMCU_VIDEO_STANDARD_PAL;
+        DVO_SetVideoFormat(FVI_VIDEO_MODE_576I);
+        DVO_SetRefreshRate(2, FVI_VIDEO_MODE_576I);
     }
 
     CRTC_EnableAll();
@@ -854,7 +853,7 @@ loop_start:
             break;
         }
         DEBUG_Write(0x0, ((uint32_t) gMaskCount[0] << 24) | ((uint32_t) gMaskCount[1] << 16) | (gMaskCount[2] << 8) | gMaskCount[3]);
-        DEBUG_Write(0x2, ((uint32_t) gVideoMode << 16) | ((gDmcuState.currentVideoMode & 0xFF) << 12) | (gDmcuState.requestedVideoMode << 8) | (gDmcuState.unk0x0E << 4) | gDmcuState.palMode);
+        DEBUG_Write(0x2, ((uint32_t) gVideoMode << 16) | ((gDmcuState.currentVideoMode & 0xFF) << 12) | (gDmcuState.requestedVideoMode << 8) | (gDmcuState.unk0x0E << 4) | gDmcuState.currentVideoStandard);
 
         if (eventHandler != NULL) {
             IRQ_Lock();
@@ -892,9 +891,9 @@ loop_start:
 
     if (gVideoMode != gDmcuState.currentVideoMode) {
         if (CONF_IsHD(DISPLAY_TV)) {
-            configureVideoModeHD(&gDmcuState, gVideoMode);
+            configureVideoStandardHD(&gDmcuState, gVideoMode);
         } else if (CONF_IsSD(DISPLAY_TV)) {
-            configureVideoModeSD(&gDmcuState, gVideoMode);
+            configureVideoStandardSD(&gDmcuState, gVideoMode);
         } else {
             goto loop_start;
         }
