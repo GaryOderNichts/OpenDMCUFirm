@@ -17,7 +17,7 @@ typedef struct DEINTIfTimParams {
     uint32_t preHBlank;
 } DEINTIfTimParams;
 
-DEINTIfTimParams g0x1630Params;
+DEINTIfTimParams gDeintIfTimParams;
 static uint32_t DAT_0120 = 0; // Why this is a 32-bit var? That's a great question
 
 void DEINT_Lock(void)
@@ -41,34 +41,34 @@ DEINTIfTimParams* DEINT_GetIfTimParams(FVIVideoMode mode)
     case FVI_VIDEO_MODE_480I:
     case FVI_VIDEO_MODE_240P_262:
     case FVI_VIDEO_MODE_240P_263:
-        g0x1630Params.topPorchOdd = 0x24;
-        g0x1630Params.topPorchEven = 0x25;
-        g0x1630Params.height = 240;
-        g0x1630Params.preHBlank = 0x77;
-        params = &g0x1630Params;
+        gDeintIfTimParams.topPorchOdd = 0x24;
+        gDeintIfTimParams.topPorchEven = 0x25;
+        gDeintIfTimParams.height = 240;
+        gDeintIfTimParams.preHBlank = 0x77;
+        params = &gDeintIfTimParams;
         break;
     case FVI_VIDEO_MODE_576I:
     case FVI_VIDEO_MODE_288P_312:
     case FVI_VIDEO_MODE_288P_313:
-        g0x1630Params.topPorchOdd = 0x2B;
-        g0x1630Params.topPorchEven = 0x2C;
-        g0x1630Params.height = 288;
-        g0x1630Params.preHBlank = 0x84;
-        params = &g0x1630Params;
+        gDeintIfTimParams.topPorchOdd = 0x2B;
+        gDeintIfTimParams.topPorchEven = 0x2C;
+        gDeintIfTimParams.height = 288;
+        gDeintIfTimParams.preHBlank = 0x84;
+        params = &gDeintIfTimParams;
         break;
     case FVI_VIDEO_MODE_480P:
-        g0x1630Params.topPorchOdd = 0x48;
-        g0x1630Params.topPorchEven = 0x48;
-        g0x1630Params.height = 480;
-        g0x1630Params.preHBlank = 0x7A;
-        params = &g0x1630Params;
+        gDeintIfTimParams.topPorchOdd = 0x48;
+        gDeintIfTimParams.topPorchEven = 0x48;
+        gDeintIfTimParams.height = 480;
+        gDeintIfTimParams.preHBlank = 0x7A;
+        params = &gDeintIfTimParams;
         break;
     case FVI_VIDEO_MODE_576P:
-        g0x1630Params.topPorchOdd = 0x58;
-        g0x1630Params.topPorchEven = 0x58;
-        g0x1630Params.height = 576;
-        g0x1630Params.preHBlank = 0x84;
-        params = &g0x1630Params;
+        gDeintIfTimParams.topPorchOdd = 0x58;
+        gDeintIfTimParams.topPorchEven = 0x58;
+        gDeintIfTimParams.height = 576;
+        gDeintIfTimParams.preHBlank = 0x84;
+        params = &gDeintIfTimParams;
         break;
     default:
         DEBUG_SetLowMarker(0x2);
