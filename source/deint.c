@@ -357,3 +357,14 @@ void DEINT_ConfigureCBCRSwap(BOOL* outEnabled)
 
     DEINT_Unlock();
 }
+
+// TODO
+void DEINT_17dc(void)
+{
+    DC_Write32(DEINT_RSVD2, DC_Read32(DEINT_RSVD2) & 0xFFFF80FF);
+}
+
+void DEINT_17f2(void)
+{
+    DC_Write32(DEINT_RSVD2, (DC_Read32(DEINT_RSVD2) & 0xFFFFDFFF) | 0x5F00);
+}

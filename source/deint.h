@@ -21,4 +21,8 @@ uint16_t DEINT_0de4(FVIVideoMode videoMode);
 
 void DEINT_ConfigureCBCRSwap(BOOL* outEnabled);
 
+void DEINT_17dc(void);
+
+void DEINT_17f2(void);
+
 #endif

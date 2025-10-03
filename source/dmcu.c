@@ -148,12 +148,6 @@ const CRTCConfig crtcConfigs[10] = {
     [9] = { CRTC_H_TOTAL(0x3E7), CRTC_H_BLANK_END(0x0049) | CRTC_H_BLANK_START(0x039F), CRTC_H_SYNC_A_END(0x28), CRTC_V_TOTAL(0x21B), CRTC_V_BLANK_END(0x26) | CRTC_V_BLANK_START(0x0206), CRTC_V_SYNC_A_END(0x2), },
 };
 
-// TODO
-void FUN_17dc(void)
-{
-    DC_Write32(0x163A, DC_Read32(0x163A) & 0xFFFF80FF);
-}
-
 void FUN_1eca(void)
 {
     // Inline CRTC disable
@@ -188,8 +182,8 @@ void DMCU_Setup()
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
 
-    DC_Write8(0x163a, 2, 3);
-    DC_Write8(0x163a, 3, 1);
+    DC_Write8(DEINT_RSVD2, 2, 3);
+    DC_Write8(DEINT_RSVD2, 3, 1);
     DC_Write8(DMCU_INTERRUPT_TO_UC_EN_MASK, 0, ABM1_HG_READY_INT_TO_UC_EN);
     DC_Write8(DMCU_INTERRUPT_TO_UC_EN_MASK, 3, 8); // VBLANK4_INT_TO_UC_EN
 
@@ -288,7 +282,7 @@ void DMCU_Setup()
         DC_Write32(D1MODE_MASTER_UPDATE_LOCK, MODE_MASTER_UPDATE_LOCK);
 
         if (CONF_IsPAL(DISPLAY_TV)) {
-            FUN_17dc();
+            DEINT_17dc();
             CRTC_SetD2Config(&crtcConfigs[9]);
             gDmcuState.currentVideoMode = FVI_VIDEO_MODE_576I;
             gDmcuState.currentVideoStandard = DMCU_VIDEO_STANDARD_PAL;
@@ -374,14 +368,14 @@ void DMCU_EventHandler0(DMCUState* state)
     FVIRegs* regs = FVI_GetRegs();
     if ((regs->reg0x1080 & 1) != 0 && state->isVisible == 0) {
         FUN_1555(state);
-        DC_PerformRead(0x163A);
-        DC_Write8(0x163A, 0x2, DC_Get8(0x2) | 0x04);
+        DC_PerformRead(DEINT_RSVD2);
+        DC_Write8(DEINT_RSVD2, 0x2, DC_Get8(0x2) | 0x04);
         DVO_SetEnable(0);
         udelay(0x411B);
         DVO_SetEnable(1);
     } else if ((regs->reg0x1080 & 1) == 0 && state->isVisible == 1) {
-        DC_PerformRead(0x163A);
-        DC_Write8(0x163A, 0x2, DC_Get8(0x2) & 0xFB);
+        DC_PerformRead(DEINT_RSVD2);
+        DC_Write8(DEINT_RSVD2, 0x2, DC_Get8(0x2) & 0xFB);
         FUN_15f0(state);
     }
 }
@@ -657,18 +651,18 @@ static void FUN_1669(void)
     udelay(0x9c40);
 
     if (gTVMode == OP_MODE_1080P && gDRCMode == OP_MODE_OTHER) {
-        DC_Write8(0x163a, 0x0, 0x1a);
-        DC_Write8(0x163a, 0x0, 0x1b);
-        DC_Write8(0x163a, 0x0, 0x17);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x1a);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x1b);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x17);
         DC_Write32(0x1ce0, 0x10000);
         udelay(0x9c40);
         return;
     }
 
     if (gTVMode == OP_MODE_OTHER && gDRCMode == OP_MODE_1080P) {
-        DC_Write8(0x163a, 0x0, 0x5a);
-        DC_Write8(0x163a, 0x0, 0x5b);
-        DC_Write8(0x163a, 0x0, 0x5e);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5a);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5b);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5e);
         DC_Write32(0x1ce0, 0x0);
         udelay(0x9c40);
         return;
@@ -681,23 +675,18 @@ static void FUN_1732(void)
     udelay(0x9c40);
 
     if (gTVMode == OP_MODE_1080P) {
-        DC_Write8(0x163a, 0x0, 0x1b);
-        DC_Write8(0x163a, 0x0, 0x1a);
-        DC_Write8(0x163a, 0x0, 0x16);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x1b);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x1a);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x16);
         DC_Write32(0x1ce0, 0x0);
     } else if (gTVMode == OP_MODE_OTHER && gDRCMode == OP_MODE_1080P) {
-        DC_Write8(0x163a, 0x0, 0x5b);
-        DC_Write8(0x163a, 0x0, 0x5a);
-        DC_Write8(0x163a, 0x0, 0x5e);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5b);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5a);
+        DC_Write8(DEINT_RSVD2, 0x0, 0x5e);
         DC_Write32(0x1ce0, 0x10000);
     }
 
     udelay(0x9c40);
-}
-
-static void FUN_17f2(void)
-{
-    DC_Write32(0x163A, (DC_Read32(0x163A) & 0xFFFFDFFF) | 0x5F00);
 }
 
 void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
@@ -720,7 +709,7 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
 
     if (videoMode == DMCU_VIDEO_STANDARD_NTSC) {
         FUN_1732();
-        FUN_17f2();
+        DEINT_17f2();
 
         GRPH_SetD1Viewport(0x2c7, 0x1da, 0x2d0, 0x1e0, gTVXStart, gTVYStart);
         GRPH_SetD2Viewport(0x2b0, 0x1ca, 0x2d0, 0x1e0, 0x10, 0xe);
@@ -739,7 +728,7 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
         DVO_SetRefreshRate(1, FVI_VIDEO_MODE_480I);
     } else if (videoMode == DMCU_VIDEO_STANDARD_PAL) {
         FUN_1669();
-        FUN_17dc();
+        DEINT_17dc();
 
         GRPH_SetD1Viewport(0x2c6, 0x238, 0x2d0, 0x240, gTVXStart, gTVYStart);
         GRPH_SetD2Viewport(0x2b0, 0x226, 0x2d0, 0x240, 0x10, 0xe);
@@ -785,7 +774,7 @@ void configureVideoStandardSD(DMCUState* state, FVIVideoMode videoMode)
     CRTC_DisableAll();
 
     if (videoStandard == DMCU_VIDEO_STANDARD_NTSC) {
-        FUN_17f2();
+        DEINT_17f2();
         GRPH_SetD1Viewport(0x2c8, 0x1da, 0x2d0, 0x1e0, 0x4, 0x2);
         GRPH_SetD2Viewport(0x2b0, 0x1ca, 0x2d0, 0x1e0, 0x10, 0xe);
         CRTC_SetD1Config(&crtcConfigs[6]);
@@ -794,7 +783,7 @@ void configureVideoStandardSD(DMCUState* state, FVIVideoMode videoMode)
         DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
         DVO_SetRefreshRate(2, FVI_VIDEO_MODE_480I);
     } else {
-        FUN_17dc();
+        DEINT_17dc();
         GRPH_SetD1Viewport(0x2c8, 0x239, 0x2d0, 0x240, 0x4, 0x2);
         GRPH_SetD2Viewport(0x2b0, 0x226, 0x2d0, 0x240, 0x10, 0xe);
         CRTC_SetD1Config(&crtcConfigs[7]);
