@@ -23,19 +23,22 @@ struct FVIRegs {
 };
 
 struct FVIState {
-    uint32_t unk0x00;
-    uint16_t unk0x04;
-    uint16_t unk0x06;
-    uint16_t unk0x08;
-    uint16_t unk0x0A;
-    uint16_t unk0x0C;
-    uint16_t unk0x0E;
-    uint32_t unk0x10;
-    uint16_t unk0x14;
-    uint16_t unk0x16;
-    uint16_t unk0x18;
-    uint16_t unk0x1A;
-    uint32_t videoMode;
+    //! Equalization pulse in half lines per field
+    uint32_t equalization;
+    //! Active video lines per field
+    uint32_t activeLines;
+    //! Preblanking in half lines
+    uint32_t preBlanking;
+    //! Always 0?
+    uint32_t unk0x0C;
+    //! Postblanking in half lines
+    uint32_t postBlanking;
+    //! Unknown, 2, 4, 6, 8 or 24
+    uint32_t unk0x14;
+    //! 80 when interlaced, otherwise 40
+    uint32_t unk0x18;
+    //! Half lines per field
+    uint32_t halfLines;
 };
 
 typedef enum {

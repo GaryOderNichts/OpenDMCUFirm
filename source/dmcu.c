@@ -184,9 +184,9 @@ void DMCU_Setup()
 
     DC_Write8(DEINT_RSVD2, 2, 3);
     DC_Write8(DEINT_RSVD2, 3, 1);
+
     DC_Write8(DMCU_INTERRUPT_TO_UC_EN_MASK, 0, ABM1_HG_READY_INT_TO_UC_EN);
     DC_Write8(DMCU_INTERRUPT_TO_UC_EN_MASK, 3, 8); // VBLANK4_INT_TO_UC_EN
-
     DC_Write32(DMCU_INTERRUPT_TO_HOST_EN_MASK, 0);
     DC_Write32(DMCU_INTERRUPT_TO_UC_XIRQ_IRQ_SEL, 0);
 
@@ -219,8 +219,8 @@ void DMCU_Setup()
     DC_Write32(D2SCL_HORZ_FILTER_CONTROL, SCL_H_2TAP_ALPHA_COEF_EN);
     DC_Write32(D2SCL_VERT_FILTER_CONTROL, SCL_V_2TAP_ALPHA_COEF_EN);
     DC_Write32(D2SCL_TAP_CONTROL, SCL_HORZ_NUM_OF_TAPS(1) | SCL_VERT_NUM_OF_TAPS(1));
-
     DC_Write8(D2SCL_SCALER_ENABLE, 0, SCL_SCALE_EN);
+
     DC_Write32(D1SCL_AUTOMATIC_MODE_CONTROL, SCL_HORZ_CALC_AUTO_RATIO_EN | SCL_VERT_CALC_AUTO_RATIO_EN);
     DC_Write32(D2SCL_AUTOMATIC_MODE_CONTROL, SCL_HORZ_CALC_AUTO_RATIO_EN | SCL_VERT_CALC_AUTO_RATIO_EN);
 
@@ -346,7 +346,7 @@ static void FUN_1555(DMCUState* state)
     }
 
     uint32_t count = 0;
-    while (CRTC_GetVertCount() != fviState->unk0x00) {
+    while (CRTC_GetVertCount() != fviState->equalization) {
         count++;
 
         if (count > 0x1FFF) {
@@ -409,7 +409,7 @@ void DMCU_EventHandler1(DMCUState* state)
         }
 
         if (ret == 0x1) {
-            if (fviState->unk0x08 == 0 && fviState->unk0x0A < 0x65) {
+            if (fviState->preBlanking < 101) {
                 state->requestedVideoMode = gVideoMode;
             } else {
                 state->requestedVideoMode = 0xffff;

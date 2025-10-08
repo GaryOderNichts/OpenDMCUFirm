@@ -63,50 +63,47 @@ FVIState* FVI_GetState(void)
     FVI_Wait();
     FVI_ReadRegs(&gFVIRegs);
 
-    gFVIState.unk0x00 = (gFVIRegs.reg0x109B >> 24) & 0xF;
-    gFVIState.unk0x04 = 0;
-    gFVIState.unk0x10 = (gFVIRegs.reg0x1083 >> 16) & 0x3FF;
-    gFVIState.unk0x0A = gFVIRegs.reg0x1083 & 0x3FF;
-    gFVIState.unk0x08 = 0;
-    gFVIState.unk0x14 = 0;
-    gFVIState.unk0x0C = 0;
-    gFVIState.unk0x1A = gFVIRegs.reg0x1092 & 0xFF;
-    gFVIState.unk0x18 = 0;
-    // I think this is right?
-    gFVIState.videoMode = ((uint16_t)gFVIState.unk0x00 * 0x3) + (((gFVIRegs.reg0x1080 >> 16) & 0x3ff) * 0x2) + ((uint16_t)gFVIState.unk0x10) + gFVIState.unk0x0A;
-    gFVIState.unk0x06 = (gFVIRegs.reg0x1080 >> 16) & 0x3FF;
-    gFVIState.unk0x0E = gFVIRegs.reg0x1084 & 0x3FF;
-    gFVIState.unk0x16 = (gFVIRegs.reg0x1084 >> 16) & 0x3FF;
+    gFVIState.equalization = (gFVIRegs.reg0x109B >> 24) & 0xF;
+    gFVIState.activeLines = (gFVIRegs.reg0x1080 >> 16) & 0x3FF;
+    gFVIState.postBlanking = (gFVIRegs.reg0x1083 >> 16) & 0x3FF;
+    gFVIState.preBlanking = gFVIRegs.reg0x1083 & 0x3FF;
+    gFVIState.unk0x18 = gFVIRegs.reg0x1092 & 0xFF;
+    gFVIState.unk0x14 = (gFVIRegs.reg0x1084 >> 16) & 0x3FF;
+    gFVIState.unk0x0C = gFVIRegs.reg0x1084 & 0x3FF;
+    gFVIState.halfLines = ((uint16_t)gFVIState.equalization * 0x3) + // Multiply by 3 for pre-equalization, vert. sync. and post-equalization
+                          ((uint16_t)gFVIState.activeLines * 0x2) +
+                          ((uint16_t)gFVIState.postBlanking) +
+                          ((uint16_t)gFVIState.preBlanking);
     return &gFVIState;
 }
 
-static FVIVideoMode convertVideoMode(uint32_t rawMode)
+static FVIVideoMode getVideoMode(uint32_t halfLines)
 {
     FVIVideoMode mode = FVI_VIDEO_MODE_INVALID;
 
-    switch (rawMode) {
-    case 0x41A:
+    switch (halfLines) {
+    case 1050:
         mode = FVI_VIDEO_MODE_480P;
         break;
-    case 0x4E2:
+    case 1250:
         mode = FVI_VIDEO_MODE_576P;
         break;
-    case 0x20D:
+    case 525:
         mode = FVI_VIDEO_MODE_480I;
         break;
-    case 0x271:
+    case 625:
         mode = FVI_VIDEO_MODE_576I;
         break;
-    case 0x270:
+    case 624:
         mode = FVI_VIDEO_MODE_288P_312;
         break;
-    case 0x272:
+    case 626:
         mode = FVI_VIDEO_MODE_288P_313;
         break;
-    case 0x20C:
+    case 524:
         mode = FVI_VIDEO_MODE_240P_262;
         break;
-    case 0x20E:
+    case 526:
         mode = FVI_VIDEO_MODE_240P_263;
         break;
     default:
@@ -115,7 +112,7 @@ static FVIVideoMode convertVideoMode(uint32_t rawMode)
 
     if (mode == FVI_VIDEO_MODE_INVALID) {
         DEBUG_SetLowMarker(0x2);
-        DEBUG_SetHighMarker(((uint16_t) rawMode) | 0x1000);
+        DEBUG_SetHighMarker(((uint16_t) halfLines) | 0x1000);
     } else {
         DEBUG_ClearMarker(0x2);
     }
@@ -129,7 +126,7 @@ BOOL FVI_GetVideoMode(FVIVideoMode* outVideoMode)
     *outVideoMode = 0;
 
     if (state) {
-        FVIVideoMode mode = convertVideoMode(state->videoMode);
+        FVIVideoMode mode = getVideoMode(state->halfLines);
         if (mode != FVI_VIDEO_MODE_INVALID) {
             *outVideoMode = mode;
             return TRUE;
