@@ -707,7 +707,7 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
     DVO_StopVIClockAll();
     CRTC_DisableAll();
 
-    if (videoMode == DMCU_VIDEO_STANDARD_NTSC) {
+    if (videoStandard == DMCU_VIDEO_STANDARD_NTSC) {
         FUN_1732();
         DEINT_17f2();
 
@@ -726,7 +726,7 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
         state->currentVideoStandard = DMCU_VIDEO_STANDARD_NTSC;
         DVO_SetVideoFormat(FVI_VIDEO_MODE_480I);
         DVO_SetRefreshRate(1, FVI_VIDEO_MODE_480I);
-    } else if (videoMode == DMCU_VIDEO_STANDARD_PAL) {
+    } else if (videoStandard == DMCU_VIDEO_STANDARD_PAL) {
         FUN_1669();
         DEINT_17dc();
 
