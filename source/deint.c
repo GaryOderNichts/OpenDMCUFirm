@@ -275,25 +275,30 @@ void FUN_0f99(void)
 
 void FUN_0e3b(FVIVideoMode videoMode, FVIState* state)
 {
-    uint16_t preBlanking = 0;
     uint32_t postBlanking = 0;
-    uint16_t uVar2 = 0;
+    uint32_t preBlanking = 0;
+    uint32_t uVar2 = 0;
+    uint32_t uVar3 = 0;
     if (videoMode == FVI_VIDEO_MODE_288P_312 || videoMode == FVI_VIDEO_MODE_240P_262) {
-        preBlanking = (uint16_t)state->preBlanking;
+        preBlanking = state->preBlanking;
         postBlanking = state->postBlanking + 1;
-        uVar2 = (uint16_t)state->unk0x0C - 1;
+
+        uVar2 = state->unk0x0C - 1;
+        uVar3 = state->unk0x14 + 2;
     } else if (videoMode == FVI_VIDEO_MODE_288P_313 || videoMode == FVI_VIDEO_MODE_240P_263) {
-        preBlanking = (uint16_t)state->preBlanking;
+        preBlanking = state->preBlanking;
         postBlanking = state->postBlanking - 1;
-        uVar2 = (uint16_t)state->unk0x0C + 1;
+
+        uVar2 = state->unk0x0C + 1;
+        uVar3 = state->unk0x14 - 2;
     }
 
     DEINT_Lock();
 
     FUN_1292();
 
-    DC_Write32(0x10A6, postBlanking | ((uint32_t) preBlanking << 16) | 0x80008000ul);
-    DC_Write32(0x10A7, ((uint32_t) uVar2 << 16) | 0x80008000ul);
+    DC_Write32(0x10A6, postBlanking | (preBlanking << 16) | 0x80008000ul);
+    DC_Write32(0x10A7, uVar3 | (uVar2 << 16) | 0x80008000ul);
 
     DAT_0120 = 1;
 
