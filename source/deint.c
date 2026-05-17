@@ -226,7 +226,7 @@ uint16_t DEINT_139a(FVIVideoMode videoMode)
         DEINT_DisableKernel();
         DEINT_DisableMAD();
     } else {
-        DEBUG_Write0x6(0x8);
+        DEBUG_Write0x6(0x4);
         DEINT_EnableKernel();
         DEINT_EnableMAD();
     }

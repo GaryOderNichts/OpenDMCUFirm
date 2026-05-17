@@ -102,7 +102,7 @@ void DVO_StopVIClock(DisplayType clock)
         return;
     }
 
-    DC_Write32(reg, (1ul << 28));
+    DC_Write32(reg, DC_GPIO_DVOCLK_MASK);
 }
 
 void DVO_RunVIClock(DisplayType clock)
