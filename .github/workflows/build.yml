@@ -5,17 +5,18 @@ on: [push, pull_request]
 jobs:
   build-binary:
     runs-on: ubuntu-latest
-    container: garyodernichts/dmcubuilder:latest
+    container: garyodernichts/dmcubuilder
 
     steps:
-    - uses: actions/checkout@master
+      - uses: actions/checkout@main
 
-    - name: Build binary
-      run: |
-        export WINEPREFIX=/root/.wine
-        make PREFIX="wine /gnu-68hc1x/app/bin/m6811-elf-" SUFFIX=".exe"
+      - name: Build binary
+        env:
+          WINEPREFIX: /root/.wine
+        run: make PREFIX='wine /gnu-68hc1x/app/bin/m6811-elf-' SUFFIX='.exe'
 
-    - uses: actions/upload-artifact@master
-      with:
-       name: OpenDMCUFirm
-       path: "dmcu.d.hex"
+      - uses: actions/upload-artifact@main
+        with:
+          name: OpenDMCUFirm
+          path: dmcu.d.hex
+          if-no-files-found: error
