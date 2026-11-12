@@ -88,7 +88,7 @@ uint16_t DEINT_SetIfTimParams(DEINTIfTimParams* params)
 {
     DC_Write32(DEINT_IF_TIM_RESOLUTION, DEINT_IF_TIM_RES_HEIGHT(params->height) | DEINT_IF_TIM_RES_WIDTH(720));
     DC_Write32(DEINT_IF_TIM_TOP_PORCH, DEINT_IF_TIM_TOP_PORCH_EVEN(params->topPorchEven) | DEINT_IF_TIM_TOP_PORCH_ODD(params->topPorchOdd));
-    DC_Write32(DEINT_IF_TIM_HBLANK, DEINT_IF_TIM_PRE_HBLANK(params->preHBlank));
+    DC_Write32(DEINT_IF_TIM_HBLANK, DEINT_IF_TIM_PRE_HBLANK(params->preHBlank) | DEINT_IF_TIM_POST_HBLANK(0));
     return 1;
 }
 
