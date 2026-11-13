@@ -21,7 +21,7 @@ typedef void (*DMCUEventHandlerFn)(DMCUState* state);
 static uint32_t lastIrqTime = 0;
 
 DMCUState gDmcuState = {
-    .stateFlags = 0,
+    .eventFlags = 0,
     .reg0x1060 = 0xFCC7FFF,
     .isVisible = FALSE,
     .currentVideoMode = FVI_VIDEO_MODE_INVALID,
@@ -41,16 +41,16 @@ uint8_t gDRCMode;
 uint16_t gTVXStart = 0x4;
 uint16_t gTVYStart = 0x6;
 
-uint32_t gMaskCount[0x4];
+uint32_t gEventCount[0x4];
 
 struct {
-    uint32_t in;
-    uint16_t out;
-} irqMasks[4] = {
-    { 0x00000003, 0x0001, },
-    { 0x08007B1C, 0x0002, },
-    { 0x07C084E0, 0x0004, },
-    { 0x003C0000, 0x0008, },
+    uint32_t inStatus;
+    uint16_t outEvent;
+} irqEventMasks[4] = {
+    { 0x00000003, DMCU_EVENT_0, },
+    { 0x08007B1C, DMCU_EVENT_1, },
+    { 0x07C084E0, DMCU_EVENT_2, },
+    { 0x003C0000, DMCU_EVENT_3, },
 };
 
 // not sure what this register does
@@ -69,7 +69,17 @@ uint8_t check0x10a0_3(void)
 
 void DMCU_HandleIrq(void)
 {
-    uint32_t currentIrqTime = GetTimerOverflowCount();
+    uint32_t i;
+    uint32_t tries = 0;
+    uint32_t handledFlags = 0;
+    uint32_t irqStatus;
+    uint32_t currentIrqTime;
+    uint16_t eventFlags = 0;
+    uint32_t flags;
+    uint32_t unk0x1080;
+    uint32_t reg0x1043;
+
+    currentIrqTime = GetTimerOverflowCount();
     if (currentIrqTime == lastIrqTime) {
         // TODO this increments some (unused) counter
     }
@@ -79,38 +89,33 @@ void DMCU_HandleIrq(void)
     DC_Get32(); // discards read result?
 
     DC_PerformRead(0x1061);
-    uint32_t irqFlags = DC_Get32();
-    uint32_t handledFlags = 0;
-    uint16_t stateFlags = gDmcuState.stateFlags;
+    irqStatus = DC_Get32();
+    i = 0;
+    eventFlags = gDmcuState.eventFlags;
 
-    for (int i = 0; i < 4; i++) {
-        uint32_t flags = irqMasks[i].in & irqFlags;
-        if (!flags) {
+    for (; i < 4; i++) {
+        if (!(irqStatus & irqEventMasks[i].inStatus)) {
             continue;
         }
 
-        handledFlags |= flags;
+        handledFlags |= irqStatus & irqEventMasks[i].inStatus;
 
-        if (((irqFlags >> 4) & irqMasks[i].out & 0xf) != 0) {
-            stateFlags |= (irqMasks[i].out & 0xff) << 8;
+        flags = irqStatus >> DMCU_EVENT_ACTIVE_SHIFT;
+        if ((flags & irqEventMasks[i].outEvent & 0xf) != 0) {
+            eventFlags |= irqEventMasks[i].outEvent << DMCU_EVENT_RETRIGGER_SHIFT;
         } else {
-            stateFlags |= irqMasks[i].out;
+            eventFlags |= irqEventMasks[i].outEvent;
         }
     }
 
-    gDmcuState.stateFlags = stateFlags;
+    gDmcuState.eventFlags = eventFlags;
 
     DC_PerformRead(0x1080);
-    uint32_t unk0x1080 = DC_Get32();
-    if ((unk0x1080 & 1) != 0 && (irqFlags & 1) != 0) {
-        uint32_t tries = 0;
-        while (tries < 0x10000) {
-            if (CRTC_GetVertCount() == 0) {
-                break;
-            }
+    unk0x1080 = DC_Get32();
+    if ((unk0x1080 & 1) != 0 && (irqStatus & 1) != 0) {
+        while (CRTC_GetVertCount() != 0 && tries++ < 0x10000)
+            ;
 
-            tries++;
-        }
         if (tries >= 0x10000) {
             DEBUG_SetLowMarker(1);
             DEBUG_SetHighMarker(1);
@@ -118,7 +123,7 @@ void DMCU_HandleIrq(void)
 
         gDmcuState.isVisible = 1;
         write0x10a0_3(1);
-    } else if ((unk0x1080 & 1) == 0 && (irqFlags & 1) != 0) {
+    } else if ((unk0x1080 & 1) == 0 && (irqStatus & 1) != 0) {
         gDmcuState.isVisible = 0;
         DC_Write32(0x10a0, 0);
     }
@@ -129,8 +134,10 @@ void DMCU_HandleIrq(void)
     DC_Write32(0x1061, handledFlags);
 
     // Check DMCU mbox for pending overscan configurations
-    if (DC_Read32(0x1043) & 0x1) {
-        DC_Write32(0x1043, 1);
+    reg0x1043 = DC_Read32(0x1043) & 1;
+    if (reg0x1043) {
+        reg0x1043 |= 1;
+        DC_Write32(0x1043, reg0x1043);
         gDmcuState.pendingOverscanConfiguration = 1;
     }
 }
@@ -343,7 +350,7 @@ static void FUN_1555(DMCUState* state)
 {
     FVIState* fviState = FVI_GetState();
     if (!fviState) {
-        state->stateFlags |= 0x1000;
+        state->eventFlags |= DMCU_EVENT_0 << DMCU_EVENT_RERUN_SHIFT;
         return;
     }
 
@@ -421,7 +428,7 @@ void DMCU_EventHandler1(DMCUState* state)
         }
     }
 
-    state->stateFlags |= 0x2000;
+    state->eventFlags |= DMCU_EVENT_1 << DMCU_EVENT_RERUN_SHIFT;
 }
 
 void DMCU_EventHandler2(DMCUState* state)
@@ -459,18 +466,18 @@ void DMCU_EventHandler3(DMCUState* state)
 
 void getEventHandler(DMCUEventHandlerFn* outFn, uint16_t* outMask, uint8_t flags)
 {
-    if (flags & 0x1) {
+    if (flags & DMCU_EVENT_0) {
         *outFn = &DMCU_EventHandler0;
-        *outMask = 0x1;
-    } else if (flags & 0x2) {
+        *outMask = DMCU_EVENT_0;
+    } else if (flags & DMCU_EVENT_1) {
         *outFn = &DMCU_EventHandler1;
-        *outMask = 0x2;
-    } else if (flags & 0x4) {
+        *outMask = DMCU_EVENT_1;
+    } else if (flags & DMCU_EVENT_2) {
         *outFn = &DMCU_EventHandler2;
-        *outMask = 0x4;
-    } else if (flags & 0x8) {
+        *outMask = DMCU_EVENT_2;
+    } else if (flags & DMCU_EVENT_3) {
         *outFn = &DMCU_EventHandler3;
-        *outMask = 0x8;
+        *outMask = DMCU_EVENT_3;
     } else {
         *outFn = NULL;
         *outMask = 0;
@@ -817,58 +824,56 @@ void HandleOverscanConfigurationRequest(DMCUState* state)
     }
 }
 
+void do_nothing() { }
+
 int main()
 {
     DMCUEventHandlerFn eventHandler;
     uint16_t eventMask;
 
+    IRQ_Enable();
+
     DMCU_Setup();
 
-    // TODO cleanup
     while (1) {
 loop_start:
-        getEventHandler(&eventHandler, &eventMask, (uint8_t)gDmcuState.stateFlags);
+        getEventHandler(&eventHandler, &eventMask, gDmcuState.eventFlags);
 
         switch (eventMask) {
-        case 0x1:
-            gMaskCount[0]++;
+        case DMCU_EVENT_0:
+            gEventCount[0]++;
             break;
-        case 0x2:
-            gMaskCount[1]++;
+        case DMCU_EVENT_1:
+            gEventCount[1]++;
             break;
-        case 0x4:
-            gMaskCount[2]++;
+        case DMCU_EVENT_2:
+            gEventCount[2]++;
             break;
-        case 0x8:
-            gMaskCount[3]++;
+        case DMCU_EVENT_3:
+            gEventCount[3]++;
             break;
         }
-        DEBUG_Write(0x0, ((uint32_t) gMaskCount[0] << 24) | ((uint32_t) gMaskCount[1] << 16) | (gMaskCount[2] << 8) | gMaskCount[3]);
-        DEBUG_Write(0x2, ((uint32_t) gVideoMode << 16) | ((gDmcuState.currentVideoMode & 0xFF) << 12) | (gDmcuState.requestedVideoMode << 8) | (gDmcuState.unk0x0E << 4) | gDmcuState.currentVideoStandard);
+        DEBUG_Write(0x0, ((uint32_t)(uint8_t)gEventCount[0] << 24) | ((uint32_t)(uint8_t)gEventCount[1] << 16) | ((uint32_t)(uint8_t)gEventCount[2] << 8) | (uint8_t)gEventCount[3]);
+        DEBUG_Write(0x2, ((uint32_t)gVideoMode << 16) | ((uint32_t)(uint8_t)gDmcuState.currentVideoMode << 12) | ((uint32_t)(uint8_t)gDmcuState.requestedVideoMode << 8) | ((uint32_t)(uint8_t)gDmcuState.unk0x0E << 4) | (uint8_t)gDmcuState.currentVideoStandard);
 
         if (eventHandler != NULL) {
             IRQ_Lock();
-            gDmcuState.stateFlags = (~eventMask & gDmcuState.stateFlags) | (eventMask << 0x4);
+            gDmcuState.eventFlags = (gDmcuState.eventFlags | (eventMask << DMCU_EVENT_ACTIVE_SHIFT)) & ~eventMask;
             IRQ_Unlock();
 
             do {
                 eventHandler(&gDmcuState);
 
-                uint8_t bVar5 = gDmcuState.stateFlags >> 8;
-                uint16_t uVar2 = eventMask;
-                if (((bVar5 >> 4) & eventMask) == 0) {
-                    if ((bVar5 & eventMask & 0xf) == 0) {
-                        IRQ_Lock();
-                        gDmcuState.stateFlags &= ~(eventMask << 0x4);
-                        IRQ_Unlock();
-
-                        goto loop_start;
-                    }
+                if (((gDmcuState.eventFlags >> DMCU_EVENT_RERUN_SHIFT) & eventMask) != 0) {
+                    gDmcuState.eventFlags &= ~(eventMask << DMCU_EVENT_RERUN_SHIFT);
+                } else if ((gDmcuState.eventFlags >> DMCU_EVENT_RETRIGGER_SHIFT) & eventMask & 0xf) {
+                    gDmcuState.eventFlags &= ~(eventMask << DMCU_EVENT_RETRIGGER_SHIFT);
                 } else {
-                    uVar2 = eventMask << 4;
+                    IRQ_Lock();
+                    gDmcuState.eventFlags &= ~(eventMask << DMCU_EVENT_ACTIVE_SHIFT);
+                    IRQ_Unlock();
+                    goto loop_start;
                 }
-
-                gDmcuState.stateFlags = ((~uVar2 & bVar5) << 8) | (gDmcuState.stateFlags & 0xFF);
             } while (1);
         }
 
@@ -900,9 +905,11 @@ loop_start:
                 CRTC_WaitUpdate();
             }
 
-            gDmcuState.stateFlags |= 2;
+            gDmcuState.eventFlags |= DMCU_EVENT_1;
         }
     }
+
+    do_nothing();
 
     goto loop_start;
 

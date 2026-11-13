@@ -12,7 +12,7 @@
 typedef uint16_t BOOL;
 
 typedef enum {
-    DISPLAY_TV,
+    DISPLAY_TV = 1,
     DISPLAY_DRC,
 } DisplayType;
 

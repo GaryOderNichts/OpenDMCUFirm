@@ -7,6 +7,16 @@
 #include "types.h"
 #include "fvi.h"
 
+#define DMCU_EVENT_0                (1 << 0)
+#define DMCU_EVENT_1                (1 << 1)
+#define DMCU_EVENT_2                (1 << 2)
+#define DMCU_EVENT_3                (1 << 3)
+
+#define DMCU_EVENT_PENDING_SHIFT    0
+#define DMCU_EVENT_ACTIVE_SHIFT     4
+#define DMCU_EVENT_RETRIGGER_SHIFT  8
+#define DMCU_EVENT_RERUN_SHIFT      12
+
 typedef struct DMCUState DMCUState;
 
 typedef enum {
@@ -16,7 +26,7 @@ typedef enum {
 } DMCUVideoStandard;
 
 struct DMCUState {
-    uint16_t stateFlags;
+    uint16_t eventFlags;
     uint32_t reg0x1060;
     BOOL isVisible;
     FVIVideoMode currentVideoMode;
