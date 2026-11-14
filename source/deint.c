@@ -354,7 +354,12 @@ void DEINT_ConfigureCBCRSwap(BOOL* outEnabled)
 
     DEINT_Lock();
 
+    // This is inverted, CBCR swap should be enabled for odd HBE
+#ifdef CUSTOM
+    if ((hbe & 0x1) != 0) {
+#else
     if ((hbe & 0x1) == 0) {
+#endif
         DEINT_EnableCBCRSwap();
         *outEnabled = TRUE;
     } else {
