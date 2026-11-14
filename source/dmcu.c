@@ -100,7 +100,13 @@ void DMCU_HandleIrq(void)
 
         handledFlags |= irqStatus & irqEventMasks[i].inStatus;
 
+        // Looks like someone made a typo here, this should check if the event
+        // is already set in eventFlags not in the hardware irqStatus
+#ifdef CUSTOM
+        flags = eventFlags >> DMCU_EVENT_ACTIVE_SHIFT;
+#else
         flags = irqStatus >> DMCU_EVENT_ACTIVE_SHIFT;
+#endif
         if ((flags & irqEventMasks[i].outEvent & 0xf) != 0) {
             eventFlags |= irqEventMasks[i].outEvent << DMCU_EVENT_RETRIGGER_SHIFT;
         } else {
