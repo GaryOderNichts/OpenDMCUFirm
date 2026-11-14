@@ -183,7 +183,7 @@ void FUN_22eb(void)
     DC_Write32(0x1044, DC_Read32(0x1044) | 1);
 }
 
-void DMCU_Setup()
+void DMCU_Setup(void)
 {
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
@@ -235,15 +235,11 @@ void DMCU_Setup()
 
     DVO_StopVIClock(DISPLAY_DRC);
 
-    uint16_t yEnd, ySize;
     if (CONF_IsPAL(DISPLAY_TV)) {
-        yEnd = 576;
-        ySize = 550;
+        GRPH_SetD2Viewport(688, 550, 720, 576, 16, 14);
     } else {
-        yEnd = 480;
-        ySize = 458;
+        GRPH_SetD2Viewport(688, 458, 720, 480, 16, 14);
     }
-    GRPH_SetD2Viewport(688, ySize, 720, yEnd, 16, 14);
     DC_Write32(D2GRPH_PITCH, GRPH_PITCH(736));
 
     DVO_RunVIClock(DISPLAY_DRC);
@@ -313,14 +309,6 @@ void DMCU_Setup()
         DC_Write32(D1MODE_MASTER_UPDATE_LOCK, 0);
         udelay(0x286);
     }
-
-// test start
-    // CRTC_WaitUpdate();
-    // CRTC_SetBlackColor(25, 0x3ff, 0);
-
-    // CRTC_Blank();
-    // CRTC_WaitUpdate();
-// test end
 
     CRTC_EnableAll();
     CRTC_WaitUpdate();
@@ -720,8 +708,8 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
         FUN_1732();
         DEINT_17f2();
 
-        GRPH_SetD1Viewport(0x2c7, 0x1da, 0x2d0, 0x1e0, gTVXStart, gTVYStart);
-        GRPH_SetD2Viewport(0x2b0, 0x1ca, 0x2d0, 0x1e0, 0x10, 0xe);
+        GRPH_SetD1Viewport(711, 474, 720, 480, gTVXStart, gTVYStart);
+        GRPH_SetD2Viewport(688, 458, 720, 480, 16, 14);
 
         if (gTVMode == OP_MODE_OTHER) {
             CRTC_SetD1Config(&crtcConfigs[5]);
@@ -739,8 +727,8 @@ void configureVideoStandardHD(DMCUState* state, FVIVideoMode videoMode)
         FUN_1669();
         DEINT_17dc();
 
-        GRPH_SetD1Viewport(0x2c6, 0x238, 0x2d0, 0x240, gTVXStart, gTVYStart);
-        GRPH_SetD2Viewport(0x2b0, 0x226, 0x2d0, 0x240, 0x10, 0xe);
+        GRPH_SetD1Viewport(710, 568, 720, 576, gTVXStart, gTVYStart);
+        GRPH_SetD2Viewport(688, 550, 720, 576, 16, 14);
 
         if (gTVMode == OP_MODE_OTHER) {
             CRTC_SetD1Config(&crtcConfigs[4]);
@@ -784,8 +772,8 @@ void configureVideoStandardSD(DMCUState* state, FVIVideoMode videoMode)
 
     if (videoStandard == DMCU_VIDEO_STANDARD_NTSC) {
         DEINT_17f2();
-        GRPH_SetD1Viewport(0x2c8, 0x1da, 0x2d0, 0x1e0, 0x4, 0x2);
-        GRPH_SetD2Viewport(0x2b0, 0x1ca, 0x2d0, 0x1e0, 0x10, 0xe);
+        GRPH_SetD1Viewport(712, 474, 720, 480, 4, 2);
+        GRPH_SetD2Viewport(688, 458, 720, 480, 16, 14);
         CRTC_SetD1Config(&crtcConfigs[6]);
         CRTC_SetD2Config(&crtcConfigs[8]);
         state->currentVideoStandard = DMCU_VIDEO_STANDARD_NTSC;
@@ -793,8 +781,8 @@ void configureVideoStandardSD(DMCUState* state, FVIVideoMode videoMode)
         DVO_SetRefreshRate(2, FVI_VIDEO_MODE_480I);
     } else {
         DEINT_17dc();
-        GRPH_SetD1Viewport(0x2c8, 0x239, 0x2d0, 0x240, 0x4, 0x2);
-        GRPH_SetD2Viewport(0x2b0, 0x226, 0x2d0, 0x240, 0x10, 0xe);
+        GRPH_SetD1Viewport(712, 569, 720, 576, 4, 2);
+        GRPH_SetD2Viewport(688, 550, 720, 576, 16, 14);
         CRTC_SetD1Config(&crtcConfigs[7]);
         CRTC_SetD2Config(&crtcConfigs[9]);
         state->currentVideoStandard = DMCU_VIDEO_STANDARD_PAL;
