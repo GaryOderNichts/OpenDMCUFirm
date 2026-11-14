@@ -6,6 +6,11 @@
 #include "debug.h"
 #include "conf.h"
 
+void DMCU_MboxWrite(uint32_t value)
+{
+    DC_Write32(0x1040, value);
+}
+
 uint32_t DMCU_MboxRead(void)
 {
     return DC_Read32(0x1042);
@@ -104,6 +109,24 @@ BOOL handleOverscanNop(DMCUState* state)
     return FALSE;
 }
 
+#ifdef CUSTOM
+BOOL handleDCRead(DMCUState* state)
+{
+    uint16_t value = (uint16_t) (DMCU_MboxRead() >> 16);
+
+    DMCU_MboxWrite(DC_Read32(value));
+    return TRUE;
+}
+
+BOOL handleMemRead(DMCUState* state)
+{
+    uint16_t value = (uint16_t) (DMCU_MboxRead() >> 16);
+
+    DMCU_MboxWrite(*(volatile uint16_t*) value);
+    return TRUE;
+}
+#endif
+
 OVERSCANHandlerFn OVERSCAN_GetHandler(void)
 {
     uint32_t reg = DMCU_MboxRead();
@@ -116,6 +139,13 @@ OVERSCANHandlerFn OVERSCAN_GetHandler(void)
     } else if (reg & 0x4) {
         return &handleOverscanClear;
     }
+#ifdef CUSTOM
+    else if (reg & (1 << 6)) {
+        return &handleDCRead;
+    } else if (reg & (1 << 7)) {
+        return &handleMemRead;
+    }
+#endif
 
     return NULL;
 }
