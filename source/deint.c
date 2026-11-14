@@ -347,17 +347,19 @@ void DEINT_DisableCBCRSwap(void)
 
 void DEINT_ConfigureCBCRSwap(BOOL* outEnabled)
 {
+    // This register consists of (HBS << 16) | HBE
+    // See YAGCD 5.3 VI - Video Interface: HTR1 - Horizontal Timing 1
     DC_PerformRead(0x1082);
-    uint8_t bVar1 = DC_Get8(0);
+    uint8_t hbe = DC_Get8(0);
 
     DEINT_Lock();
 
-    if (bVar1 & 0x1) {
-        DEINT_DisableCBCRSwap();
-        *outEnabled = FALSE;
-    } else {
+    if ((hbe & 0x1) == 0) {
         DEINT_EnableCBCRSwap();
         *outEnabled = TRUE;
+    } else {
+        DEINT_DisableCBCRSwap();
+        *outEnabled = FALSE;
     }
 
     DEINT_Unlock();
