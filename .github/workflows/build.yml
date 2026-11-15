@@ -5,7 +5,9 @@ on: [push, pull_request]
 jobs:
   build-binary:
     runs-on: ubuntu-latest
-    container: garyodernichts/dmcubuilder
+    container:
+      image: garyodernichts/dmcubuilder
+      options: --security-opt seccomp=unconfined
 
     steps:
       - uses: actions/checkout@main
