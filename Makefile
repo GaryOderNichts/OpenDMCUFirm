@@ -4,6 +4,9 @@
 
 TOPDIR ?= $(CURDIR)
 
+# Build with customizations by default
+CUSTOM ?= 1
+
 #---------------------------------------------------------------------------------
 # the prefix and suffix on the compiler executables
 #---------------------------------------------------------------------------------
@@ -45,6 +48,10 @@ INCLUDES	:=	include
 #-------------------------------------------------------------------------------
 CFLAGS	:=	-Wall -Os -std=gnu99 -fomit-frame-pointer -m68hc11 -mshort \
 			$(INCLUDE)
+
+ifeq ($(CUSTOM), 1)
+	CFLAGS += -DCUSTOM
+endif
 
 CXXFLAGS	:= $(CFLAGS)
 
@@ -165,7 +172,9 @@ $(OUTPUT).elf	:	$(OFILES)
 #---------------------------------------------------------------------------------
 %.s19:
 	@echo creating ... $(notdir $@)
-	$(SILENTCMD)$(OBJCOPY) --only-section=.text --only-section=.rodata --only-section=.data --only-section=.vectors --output-target=srec $< $@
+	$(SILENTCMD)$(OBJCOPY) --only-section=.text --only-section=.rodata \
+	--only-section=.data --only-section=.custom --only-section=.extra_ram \
+	--only-section=.vectors --output-target=srec $< $@
 
 #---------------------------------------------------------------------------------
 %.d.hex:

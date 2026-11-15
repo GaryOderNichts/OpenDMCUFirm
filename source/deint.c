@@ -10,6 +10,10 @@
 #include "conf.h"
 #include "irq.h"
 
+#ifdef CUSTOM
+#include "custom.h"
+#endif
+
 typedef struct DEINTIfTimParams {
     uint32_t topPorchOdd;
     uint32_t topPorchEven;
@@ -231,11 +235,19 @@ uint16_t DEINT_139a(FVIVideoMode videoMode)
         DEINT_EnableMAD();
     }
 
+#ifdef CUSTOM
+    if (CONF_IsHD(DISPLAY_TV) && _custom.tvScaler.enabled) {
+#else
     if (CONF_IsHD(DISPLAY_TV)) {
+#endif
         D1SCALER_Enable();
     }
 
+#ifdef CUSTOM
+    if (CONF_IsHD(DISPLAY_DRC) && _custom.drcScaler.enabled) {
+#else
     if (CONF_IsHD(DISPLAY_DRC)) {
+#endif
         D2SCALER_Enable();
     }
 

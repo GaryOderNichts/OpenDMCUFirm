@@ -14,6 +14,10 @@
 #include "deint.h"
 #include "overscan.h"
 
+#ifdef CUSTOM
+#include "custom.h"
+#endif
+
 #include <asm-m68hc11/ports_def.h>
 
 typedef void (*DMCUEventHandlerFn)(DMCUState* state);
@@ -189,7 +193,13 @@ void FUN_22eb(void)
     DC_Write32(0x1044, DC_Read32(0x1044) | 1);
 }
 
+// We're running out of space in the text section,
+// so let's place some large functions into the extra section
+#ifdef CUSTOM
+void __attribute__((section(".extra_ram"))) DMCU_Setup(void)
+#else
 void DMCU_Setup(void)
+#endif
 {
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
     DC_ImmediateWrite32(DOUT_SCRATCH0, 0);
@@ -229,11 +239,34 @@ void DMCU_Setup(void)
     DVO_SetEnable(0);
     CRTC_DisableAll();
 
+#ifdef CUSTOM
+    // Configure D1SCL
+    if (_custom.tvScaler.nearest != 0xff) {
+        DC_Write32(D1SCL_HORZ_FILTER_CONTROL, _custom.tvScaler.nearest ? SCL_H_FILTER_PICK_NEAREST : 0);
+        DC_Write32(D1SCL_VERT_FILTER_CONTROL, _custom.tvScaler.nearest ? SCL_V_FILTER_PICK_NEAREST : 0);
+    }
+    if (_custom.tvScaler.enabled != 0xff) {
+        DC_Write8(D1SCL_SCALER_ENABLE, 0, _custom.tvScaler.enabled ? SCL_SCALE_EN : 0);
+    }
+
+    // Configure D2SCL
+    uint32_t horzFilterControl = SCL_H_2TAP_ALPHA_COEF_EN | SCL_H_2TAP_ALPHA_COEF_MODE(0);
+    uint32_t vertFilterControl = SCL_V_2TAP_ALPHA_COEF_EN | SCL_V_2TAP_ALPHA_COEF_MODE(0);
+    if (_custom.drcScaler.nearest != 0xff) {
+        horzFilterControl |= _custom.drcScaler.nearest ? SCL_H_FILTER_PICK_NEAREST : 0;
+        vertFilterControl |= _custom.drcScaler.nearest ? SCL_V_FILTER_PICK_NEAREST : 0;
+    } 
+    DC_Write32(D2SCL_HORZ_FILTER_CONTROL, horzFilterControl);
+    DC_Write32(D2SCL_VERT_FILTER_CONTROL, vertFilterControl);
+    DC_Write32(D2SCL_TAP_CONTROL, SCL_HORZ_NUM_OF_TAPS(1) | SCL_VERT_NUM_OF_TAPS(1));
+    DC_Write8(D2SCL_SCALER_ENABLE, 0, _custom.drcScaler.enabled ? SCL_SCALE_EN : 0);
+#else
     // Configure D2SCL (always enabled)
     DC_Write32(D2SCL_HORZ_FILTER_CONTROL, SCL_H_2TAP_ALPHA_COEF_EN | SCL_H_2TAP_ALPHA_COEF_MODE(0));
     DC_Write32(D2SCL_VERT_FILTER_CONTROL, SCL_V_2TAP_ALPHA_COEF_EN | SCL_V_2TAP_ALPHA_COEF_MODE(0));
     DC_Write32(D2SCL_TAP_CONTROL, SCL_HORZ_NUM_OF_TAPS(1) | SCL_VERT_NUM_OF_TAPS(1));
     DC_Write8(D2SCL_SCALER_ENABLE, 0, SCL_SCALE_EN);
+#endif
 
     // Enable automatic ratio calculation for both scalers
     DC_Write32(D1SCL_AUTOMATIC_MODE_CONTROL, SCL_HORZ_CALC_AUTO_RATIO_EN | SCL_VERT_CALC_AUTO_RATIO_EN);

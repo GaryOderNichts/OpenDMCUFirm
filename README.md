@@ -14,7 +14,18 @@ This project reimplements the Wii U DMCU firmware based on reverse engineering o
 
 This project builds a working DMCU firmware for the Wii U to use in Wii mode. It can be loaded using [evWii](https://github.com/GaryOderNichts/evwii).
 
-The goal of this project is to gain an insight into what the DMCU firmware does and potentially improve upon it. It is currently still work-in-progress, potential issues are expected.
+The goal of this project is to gain an insight into what the DMCU firmware does and improve upon it.
+
+## Customizations
+
+OpenDMCUFirm supports several customizations which can be applied when building the firmware. These customizations include:
+- Fixes wrong value being checked when scheduling events during interrupt handling.
+- Fixes inverted CbCr swap logic for odd horizontal origins.
+- Adds support for configuring scaler options.
+- Adds support for configuring the viewport.
+- IPC (Inter-Processor-Communication) to read GPU registers and DMCU memory from Wii mode.
+
+These customizations can be enabled or disabled with the `CUSTOM=1` or `CUSTOM=0` flag when running `make`. Make sure to run `make clean` first, if OpenDMCUFirm is already built.
 
 ## Building
 
@@ -29,6 +40,8 @@ docker run -it --rm -v ${PWD}:/project garyodernichts/dmcubuilder make PREFIX="w
 docker build . -t dmcubuilder
 # and run make 
 docker run -it --rm -v ${PWD}:/project dmcubuilder make PREFIX="wine /gnu-68hc1x/app/bin/m6811-elf-" SUFFIX=".exe"
+# or run without added customizations
+docker run -it --rm -v ${PWD}:/project dmcubuilder make PREFIX="wine /gnu-68hc1x/app/bin/m6811-elf-" SUFFIX=".exe" CUSTOM=0
 ```
 
 The resulting `dmcu.d.hex` file should be placed in the `wiiu` folder on your SD Card and loaded using [evWii](https://github.com/GaryOderNichts/evwii)'s "Load DMCU Firmware from SD Card" option.

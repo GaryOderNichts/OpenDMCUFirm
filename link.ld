@@ -23,6 +23,9 @@ PROVIDE (_io_ports = 0x8000);
 PROVIDE (_dc_resolutions = 0x3400); /* 0x3400 - 0x340d */
 PROVIDE (_dc_op_modes = 0x5800); /* 0x5800 - 0x5802 */
 
+/* Address where our customization options are stored. */
+_custom_addr = 0x3500;
+
 SECTIONS
 {
   .hash          : { *(.hash)           }
@@ -239,6 +242,16 @@ SECTIONS
   }  > eram
   __bss_size = SIZEOF(.bss);
   PROVIDE (__bss_size = SIZEOF(.bss));
+  /* Section for default customization options. */
+  .custom _custom_addr :
+  {
+    KEEP (*(.custom))
+  }
+  /* Additional ram for customization functions. */
+  .extra_ram 0x3600 :
+  {
+    KEEP (*(.extra_ram))
+  }
   /* If the 'vectors_addr' symbol is defined, it indicates the start address
      of interrupt vectors.  This depends on the 68HC11 operating mode:
                         Addr
